@@ -1,0 +1,23 @@
+apiVersion: 1
+
+datasources:
+  - name: Main
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    options:
+      folder: '/var/lib/grafana/dashboards'
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    orgId: 1
+    isDefault: false
+    version: 1
+    url: 'redis-node-1:6379'
+    jsonData:
+      client: cluster
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+    editable: true

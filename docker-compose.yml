@@ -1,0 +1,135 @@
+version: "3.9"
+
+services:
+  redis-node-1:
+    image: redis:latest
+    ports:
+      - "7001:6379"
+    hostname: redis-node-1
+    networks:
+      - my_network
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+  redis-node-2:
+    image: redis:latest
+    ports:
+      - "7002:6379"
+    networks:
+      - my_network
+    hostname: redis-node-2
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  redis-node-3:
+    image: redis:latest
+    ports:
+      - "7003:6379"
+    networks:
+      - my_network
+    hostname: redis-node-3
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  redis-node-4:
+    image: redis:latest
+    ports:
+      - "7004:6379"
+    networks:
+      - my_network
+    hostname: redis-node-4
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  redis-node-5:
+    image: redis:latest
+    ports:
+      - "7005:6379"
+    networks:
+      - my_network
+    hostname: redis-node-5
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  redis-node-6:
+    image: redis:latest
+    ports:
+      - "7006:6379"
+    networks:
+      - my_network
+    hostname: redis-node-6
+    volumes:
+      - ./redis-cluster/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  redis-cluster-creator:
+    image: redis:latest
+    ports:
+      - "6999:6999"
+    command: redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1 --cluster-yes
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    networks:
+      - my_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    container_name: prometheus
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - my_network
+  golang-app-prom:
+    build:
+      context: .
+      dockerfile: Dockerfile_prom
+    networks:
+      - my_network
+    ports:
+      - "9001:9001"
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    networks:
+      - my_network
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=redis-datasource
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    privileged: true
+    command:
+      - '--path.rootfs=/host'
+    ports:
+      - '9100:9100'
+    networks:
+      - my_network
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro'
+
+networks:
+  my_network:
+    driver: bridge
